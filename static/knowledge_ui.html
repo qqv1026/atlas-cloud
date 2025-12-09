@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>ATLAS Knowledge Window</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f7f7f7;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+        textarea {
+            width: 100%;
+            height: 180px;
+            padding: 10px;
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #0084ff;
+            border: none;
+            color: white;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .section {
+            background: white;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .segment-block {
+            padding: 8px;
+            margin-bottom: 6px;
+            border-left: 4px solid #0084ff;
+            background: #eef6ff;
+        }
+        .feynman-block {
+            padding: 8px;
+            margin-bottom: 6px;
+            background: #fff0e6;
+            border-left: 4px solid #ffa64d;
+        }
+    </style>
+    </head>
+
+<body>
+
+<div class="container">
+
+    <h2>ATLAS Knowledge Window（Cloud Version）</h2>
+    <p>孩子的學習入口｜貼內容 → 按 Analyze</p>
+
+    <textarea id="inputText" placeholder="貼入知識、文章、章節…"></textarea>
+    <button onclick="analyzeText()">Analyze Input</button>
+
+    <div class="section">
+        <h3>Segmented Reading</h3>
+        <div id="segments"></div>
+    </div>
+
+    <div class="section">
+        <h3>AI Questions & Gaps</h3>
+        <div id="questions"></div>
+    </div>
+
+    <div class="section">
+        <h3>Feynman Output</h3>
+        <div id="feynman"></div>
+    </div>
+
+</div>
+
+
+<script>
+async function analyzeText() {
+    const text = document.getElementById("inputText").value;
+    const segmentsBox = document.getElementById("segments");
+    const questionBox  = document.getElementById("questions");
+    const feynmanBox   = document.getElementById("feynman");
+
+    segmentsBox.innerHTML = "Analyzing...";
+    questionBox.innerHTML = "";
+    feynmanBox.innerHTML = "";
+
+    // ⚠⚠⚠ 雲端 API 路徑：部署完成後請更新這一行 ⚠⚠⚠
+    const API_BASE = window.location.origin + "/analyze";
+
+    const response = await fetch(API_BASE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+    });
+
+    const data = await response.json();
+
+    segmentsBox.innerHTML = "";
+    questionBox.innerHTML = "";
+    feynmanBox.innerHTML = "";
+
+    data.results.forEach((item, index) => {
+
+        // Segment
+        segmentsBox.innerHTML += `
+            <div class="segment-block">[${index+1}] ${item.segment}</div>
+        `;
+
+        // Questions
+        let q = item.questions.map(q => `<li>${q}</li>`).join("");
+        questionBox.innerHTML += `
+            <div class="segment-block"><b>Segment ${index+1}</b><ul>${q}</ul></div>
+        `;
+
+        // Feynman
+        feynmanBox.innerHTML += `
+            <div class="feynman-block">
+                <b>Segment ${index+1} Feynman Report:</b>
+                <br>白話：${item.feynman.plain}
+                <br>比喻：${item.feynman.analogy}
+                <br>缺口：${item.feynman.gaps.join("、")}
+            </div>
+        `;
+    });
+}
+</script>
+
+</body>
+</html>
