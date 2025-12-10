@@ -11,11 +11,14 @@
             background: #111;
             color: #fff;
             font-family: "Microsoft JhengHei", sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
 
         .header {
-            background: #000;
             padding: 20px;
+            background: #000;
             font-size: 24px;
             font-weight: bold;
             text-align: center;
@@ -23,25 +26,29 @@
         }
 
         #chat {
-            height: 70vh;
+            flex: 1;
             overflow-y: auto;
             padding: 20px;
         }
 
         .bubble {
-            max-width: 70%;
+            max-width: 80%;
             padding: 12px 16px;
-            margin: 10px 0;
+            margin: 12px 0;
             border-radius: 10px;
+            line-height: 1.6;
+            white-space: pre-wrap;
         }
 
         .user {
             background: #4a7dff;
+            color: white;
             margin-left: auto;
         }
 
         .bot {
             background: #333;
+            color: #eee;
             margin-right: auto;
         }
 
@@ -54,24 +61,32 @@
 
         input {
             flex: 1;
-            padding: 10px;
+            padding: 12px;
             border-radius: 8px;
             border: none;
+            outline: none;
+            font-size: 16px;
         }
 
         button {
             margin-left: 10px;
-            padding: 10px 20px;
+            padding: 12px 20px;
             background: #4a7dff;
             border: none;
             border-radius: 8px;
             color: white;
+            font-size: 16px;
             cursor: pointer;
+        }
+
+        button:hover {
+            background: #6a94ff;
         }
     </style>
 </head>
 
 <body>
+
     <div class="header">ATLAS Cloud Tutor 🎓</div>
 
     <div id="chat"></div>
@@ -81,34 +96,48 @@
         <button onclick="send()">送出</button>
     </div>
 
-    <script>
-        function addBubble(text, cls) {
-            const div = document.createElement("div");
-            div.className = "bubble " + cls;
-            div.innerText = text;
-            document.getElementById("chat").appendChild(div);
-        }
+<script>
+function addBubble(text, cls) {
+    const div = document.createElement("div");
+    div.className = "bubble " + cls;
+    div.innerText = text;
+    document.getElementById("chat").appendChild(div);
 
-        async function send() {
-            const q = document.getElementById("question").value.trim();
-            if (!q) return;
+    // 自動捲動到最底部
+    const chat = document.getElementById("chat");
+    chat.scrollTop = chat.scrollHeight;
+}
 
-            addBubble(q, "user");
+async function send() {
+    const q = document.getElementById("question").value.trim();
+    if (!q) return;
 
-            const res = await fetch("/tutor", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ question: q })
-            });
+    // 顯示使用者訊息
+    addBubble(q, "user");
+    document.getElementById("question").value = "";
 
-            const data = await res.json();
+    try {
+        const res = await fetch("/tutor", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: q })
+        });
 
-            // 你要的是 data.answer
-            addBubble(data.answer || "（無回應）", "bot");
+        const data = await res.json();
 
-            document.getElementById("question").value = "";
-        }
-    </script>
+        // 🔥 關鍵：如果 AI 回傳 object，就轉成漂亮的文字
+        const msg = 
+            typeof data.answer === "object"
+                ? JSON.stringify(data.answer, null, 2)
+                : data.answer || "（無回應）";
+
+        addBubble(msg, "bot");
+
+    } catch (err) {
+        addBubble("⚠️ 系統錯誤：" + err.message, "bot");
+    }
+}
+</script>
 
 </body>
 </html>
