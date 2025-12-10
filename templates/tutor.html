@@ -1,156 +1,114 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ATLAS Cloud Tutor</title>
+
     <style>
         body {
             margin: 0;
-            background: #121212;
-            font-family: "Microsoft JhengHei", sans-serif;
+            background: #111;
             color: #fff;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
+            font-family: sans-serif;
         }
 
         .header {
-            background: #1f1f1f;
-            padding: 15px;
-            font-size: 20px;
-            font-weight: bold;
+            padding: 20px;
+            background: #000;
+            font-size: 24px;
             text-align: center;
             border-bottom: 1px solid #333;
         }
 
-        .chat-container {
-            flex: 1;
+        #chat {
+            height: 70vh;
             overflow-y: auto;
             padding: 20px;
         }
 
-        .msg {
+        .bubble {
             max-width: 70%;
             padding: 12px 16px;
-            margin-bottom: 12px;
+            margin: 10px 0;
             border-radius: 10px;
-            line-height: 1.5;
         }
 
         .user {
-            background: #4a80f5;
+            background: #4a7dff;
             margin-left: auto;
-            text-align: right;
         }
 
-        .assistant {
-            background: #2d2d2d;
+        .bot {
+            background: #333;
             margin-right: auto;
         }
 
-        .input-bar {
-            display: flex;
+        .input-area {
             padding: 15px;
-            background: #1f1f1f;
+            display: flex;
+            background: #000;
             border-top: 1px solid #333;
         }
 
         input {
             flex: 1;
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
             border: none;
             outline: none;
-            background: #2d2d2d;
-            color: #fff;
-            font-size: 16px;
         }
 
         button {
             margin-left: 10px;
-            padding: 12px 20px;
-            background: #4a80f5;
-            color: #fff;
+            padding: 10px 20px;
+            background: #4a7dff;
             border: none;
             border-radius: 8px;
+            color: white;
             cursor: pointer;
-            font-size: 16px;
-        }
-
-        button:disabled {
-            background: #777;
-            cursor: not-allowed;
-        }
-
-        .thinking {
-            opacity: 0.7;
-            font-style: italic;
         }
     </style>
 </head>
+
 <body>
+    <div class="header">ATLAS Cloud Tutor 🎓</div>
 
-<div class="header">ATLAS Cloud Tutor 🎓</div>
+    <div id="chat"></div>
 
-<div class="chat-container" id="chat"></div>
+    <div class="input-area">
+        <input id="question" placeholder="輸入你的問題…" />
+        <button onclick="send()">送出</button>
+    </div>
 
-<div class="input-bar">
-    <input id="question" type="text" placeholder="輸入你的問題…" />
-    <button onclick="sendMessage()" id="sendBtn">送出</button>
-</div>
-
-<script>
-const chat = document.getElementById("chat");
-const input = document.getElementById("question");
-const sendBtn = document.getElementById("sendBtn");
-
-function appendMessage(text, sender) {
-    const msg = document.createElement("div");
-    msg.className = "msg " + sender;
-    msg.innerText = text;
-    chat.appendChild(msg);
-    chat.scrollTop = chat.scrollHeight;
-}
-
-async function sendMessage() {
-    let q = input.value.trim();
-    if (!q) return;
-
-    appendMessage(q, "user");
-    input.value = "";
-    sendBtn.disabled = true;
-
-    appendMessage("老師正在思考中… ⏳", "assistant thinking");
-    const thinkingBubble = chat.lastChild;
-
-    try {
-        let response = await fetch("/tutor", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question: q })
-        });
-
-        let data = await response.json();
-
-        thinkingBubble.remove();
-
-        if (data.answer) {
-            appendMessage(data.answer, "assistant");
-        } else {
-            appendMessage("⚠️ 錯誤：" + JSON.stringify(data), "assistant");
+    <script>
+        function addBubble(text, cls) {
+            const div = document.createElement("div");
+            div.className = "bubble " + cls;
+            div.innerText = text;
+            document.getElementById("chat").appendChild(div);
         }
-    } catch (err) {
-        thinkingBubble.remove();
-        appendMessage("❌ 連線錯誤：" + err.message, "assistant");
-    }
 
-    sendBtn.disabled = false;
-}
+        async function send() {
+            const q = document.getElementById("question").value.trim();
+            if (!q) return;
 
-input.addEventListener("keypress", function(e) {
-    if (e.key === "Enter") sendMessage();
-});
-</script>
+            addBubble(q, "user");
 
+            const res = await fetch("/tutor", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question: q })
+            });
+
+            const data = await res.json();
+
+            // 🔥 重要：顯示 AI 回覆
+            addBubble(data.answer || "（無回覆）", "bot");
+
+            document.getElementById("question").value = "";
+        }
+    </script>
 </body>
 </html>
+
