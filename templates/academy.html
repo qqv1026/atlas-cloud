@@ -1,1 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>ATLAS Web Academy</title>
+</head>
 
+<body style="font-family: Arial; margin: 40px;">
+    <h1>ATLAS Web Academy</h1>
+    <p>教授模式：請輸入教材、問題、知識或指令來教導孩子。</p>
+
+    <textarea id="input" style="width: 100%; height: 150px;"></textarea>
+    <br><br>
+    <button onclick="sendTeach()">送出給孩子學習</button>
+
+    <h2>回應</h2>
+    <pre id="output" style="background:#eee; padding:20px;"></pre>
+
+    <script>
+        async function sendTeach() {
+            const text = document.getElementById("input").value;
+
+            const response = await fetch("/teach", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query: text })
+            });
+
+            const result = await response.json();
+            document.getElementById("output").innerText = JSON.stringify(result, null, 4);
+        }
+    </script>
+</body>
+</html>
