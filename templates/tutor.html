@@ -8,7 +8,7 @@
     <style>
         body {
             margin: 0;
-            background: #111;
+            background: #0d0d0d;
             color: #fff;
             font-family: "Microsoft JhengHei", sans-serif;
             display: flex;
@@ -17,8 +17,8 @@
         }
 
         .header {
-            background: #000;
-            padding: 20px;
+            background: #111;
+            padding: 18px;
             font-size: 24px;
             font-weight: bold;
             text-align: center;
@@ -32,12 +32,12 @@
         }
 
         .bubble {
-            max-width: 70%;
+            max-width: 80%;
             padding: 12px 16px;
             margin: 10px 0;
             border-radius: 10px;
-            word-break: break-word;
             white-space: pre-wrap;
+            line-height: 1.5;
         }
 
         .user {
@@ -51,28 +51,33 @@
         }
 
         .input-area {
-            display: flex;
             padding: 15px;
-            background: #000;
+            display: flex;
+            background: #111;
             border-top: 1px solid #333;
         }
 
         input {
             flex: 1;
-            padding: 10px;
-            border-radius: 8px;
+            padding: 12px;
+            border-radius: 6px;
             border: none;
-            outline: none;
+            background: #222;
+            color: #fff;
         }
 
         button {
             margin-left: 10px;
-            padding: 10px 20px;
+            padding: 12px 20px;
             background: #4a7dff;
-            color: white;
+            border-radius: 6px;
             border: none;
-            border-radius: 8px;
+            color: white;
             cursor: pointer;
+        }
+
+        button:hover {
+            background: #6b92ff;
         }
     </style>
 </head>
@@ -88,51 +93,43 @@
     </div>
 
 <script>
-
-// ✅ 讓亂碼的 Unicode 變成中文（如 \u4f60\u597d → 你好）
-function decodeUnicode(str) {
-    try {
-        return str.replace(/\\u[\dA-F]{4}/gi, m =>
-            String.fromCharCode(parseInt(m.replace("\\u", ""), 16))
-        );
-    } catch (err) {
-        return str;
-    }
-}
-
-// ⭐ 新增對話泡泡
 function addBubble(text, cls) {
     const div = document.createElement("div");
     div.className = "bubble " + cls;
-
-    // ⬆ 所有文字先 decode 再顯示
-    div.innerText = decodeUnicode(text);
-
+    div.innerText = text;
     document.getElementById("chat").appendChild(div);
 }
 
-// ⭐ 傳送訊息給後端 AI
 async function send() {
     const q = document.getElementById("question").value.trim();
     if (!q) return;
 
     addBubble(q, "user");
 
-    const res = await fetch("/tutor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q })
-    });
+    try {
+        const res = await fetch("/tutor", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: q })
+        });
 
-    const data = await res.json();
+        const data = await res.json();
 
-    // 從後端取回 answer（通常是 obj.answer）
-    const answer = data.answer || data.response || JSON.stringify(data);
+        // 🔥 若 answer 是物件 → 轉成漂亮的 JSON 文字
+        let output = "";
+        if (typeof data.answer === "object") {
+            output = JSON.stringify(data.answer, null, 2); // 美化排版
+        } else {
+            output = data.answer || "（無回覆）";
+        }
 
-    addBubble(answer, "bot");
+        addBubble(output, "bot");
+    } catch (err) {
+        addBubble("⚠ 系統錯誤：" + err, "bot");
+    }
+
     document.getElementById("question").value = "";
 }
-
 </script>
 
 </body>
