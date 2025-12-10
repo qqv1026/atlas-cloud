@@ -13,3 +13,14 @@ class StyleEngine:
             "emotion": fused.get("fused_emotion", ""),
             "action": fused.get("fused_action", ""),
         }
+
+    def process(self, query: str):
+        tone = "寫實"
+        if any(k in query for k in ["爆", "衝", "跑", "急"]):
+            tone = "動作強烈"
+        elif any(k in query for k in ["沉默", "靜", "慢"]):
+            tone = "抒情慢節奏"
+        return {
+            "tone": tone,
+            "guideline": "冷靜、準確、條理、帶1%溫度"
+        }
