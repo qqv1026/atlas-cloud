@@ -17,8 +17,8 @@
         }
 
         .header {
-            padding: 20px;
             background: #000;
+            padding: 20px;
             font-size: 24px;
             font-weight: bold;
             text-align: center;
@@ -32,61 +32,52 @@
         }
 
         .bubble {
-            max-width: 80%;
+            max-width: 70%;
             padding: 12px 16px;
-            margin: 12px 0;
+            margin: 10px 0;
             border-radius: 10px;
-            line-height: 1.6;
+            word-break: break-word;
             white-space: pre-wrap;
         }
 
         .user {
             background: #4a7dff;
-            color: white;
             margin-left: auto;
         }
 
         .bot {
             background: #333;
-            color: #eee;
             margin-right: auto;
         }
 
         .input-area {
-            padding: 15px;
             display: flex;
+            padding: 15px;
             background: #000;
             border-top: 1px solid #333;
         }
 
         input {
             flex: 1;
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
             border: none;
             outline: none;
-            font-size: 16px;
         }
 
         button {
             margin-left: 10px;
-            padding: 12px 20px;
+            padding: 10px 20px;
             background: #4a7dff;
+            color: white;
             border: none;
             border-radius: 8px;
-            color: white;
-            font-size: 16px;
             cursor: pointer;
-        }
-
-        button:hover {
-            background: #6a94ff;
         }
     </style>
 </head>
 
 <body>
-
     <div class="header">ATLAS Cloud Tutor 🎓</div>
 
     <div id="chat"></div>
@@ -97,46 +88,51 @@
     </div>
 
 <script>
+
+// ✅ 讓亂碼的 Unicode 變成中文（如 \u4f60\u597d → 你好）
+function decodeUnicode(str) {
+    try {
+        return str.replace(/\\u[\dA-F]{4}/gi, m =>
+            String.fromCharCode(parseInt(m.replace("\\u", ""), 16))
+        );
+    } catch (err) {
+        return str;
+    }
+}
+
+// ⭐ 新增對話泡泡
 function addBubble(text, cls) {
     const div = document.createElement("div");
     div.className = "bubble " + cls;
-    div.innerText = text;
-    document.getElementById("chat").appendChild(div);
 
-    // 自動捲動到最底部
-    const chat = document.getElementById("chat");
-    chat.scrollTop = chat.scrollHeight;
+    // ⬆ 所有文字先 decode 再顯示
+    div.innerText = decodeUnicode(text);
+
+    document.getElementById("chat").appendChild(div);
 }
 
+// ⭐ 傳送訊息給後端 AI
 async function send() {
     const q = document.getElementById("question").value.trim();
     if (!q) return;
 
-    // 顯示使用者訊息
     addBubble(q, "user");
+
+    const res = await fetch("/tutor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: q })
+    });
+
+    const data = await res.json();
+
+    // 從後端取回 answer（通常是 obj.answer）
+    const answer = data.answer || data.response || JSON.stringify(data);
+
+    addBubble(answer, "bot");
     document.getElementById("question").value = "";
-
-    try {
-        const res = await fetch("/tutor", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question: q })
-        });
-
-        const data = await res.json();
-
-        // 🔥 關鍵：如果 AI 回傳 object，就轉成漂亮的文字
-        const msg = 
-            typeof data.answer === "object"
-                ? JSON.stringify(data.answer, null, 2)
-                : data.answer || "（無回應）";
-
-        addBubble(msg, "bot");
-
-    } catch (err) {
-        addBubble("⚠️ 系統錯誤：" + err.message, "bot");
-    }
 }
+
 </script>
 
 </body>
