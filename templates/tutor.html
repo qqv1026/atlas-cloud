@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATLAS Cloud Tutor</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ATLAS Cloud Tutor 🎓</title>
 
     <style>
         body {
@@ -11,9 +11,6 @@
             background: #111;
             color: #fff;
             font-family: "Microsoft JhengHei", sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
         }
 
         .header {
@@ -26,18 +23,16 @@
         }
 
         #chat {
-            flex: 1;
+            height: 70vh;
             overflow-y: auto;
             padding: 20px;
         }
 
         .bubble {
-            max-width: 75%;
+            max-width: 70%;
             padding: 12px 16px;
             margin: 10px 0;
             border-radius: 10px;
-            line-height: 1.5;
-            white-space: pre-wrap;
         }
 
         .user {
@@ -51,8 +46,8 @@
         }
 
         .input-area {
-            display: flex;
             padding: 15px;
+            display: flex;
             background: #000;
             border-top: 1px solid #333;
         }
@@ -62,7 +57,6 @@
             padding: 10px;
             border-radius: 8px;
             border: none;
-            outline: none;
         }
 
         button {
@@ -78,13 +72,12 @@
 </head>
 
 <body>
-
     <div class="header">ATLAS Cloud Tutor 🎓</div>
 
     <div id="chat"></div>
 
     <div class="input-area">
-        <input id="question" placeholder="輸入你的問題…" onkeydown="if(event.key === 'Enter'){ send(); }">
+        <input id="question" placeholder="輸入你的問題…" />
         <button onclick="send()">送出</button>
     </div>
 
@@ -94,7 +87,6 @@
             div.className = "bubble " + cls;
             div.innerText = text;
             document.getElementById("chat").appendChild(div);
-            document.getElementById("chat").scrollTop = document.getElementById("chat").scrollHeight;
         }
 
         async function send() {
@@ -102,30 +94,21 @@
             if (!q) return;
 
             addBubble(q, "user");
+
+            const res = await fetch("/tutor", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question: q })
+            });
+
+            const data = await res.json();
+
+            // 你要的是 data.answer
+            addBubble(data.answer || "（無回應）", "bot");
+
             document.getElementById("question").value = "";
-
-            try {
-                const res = await fetch("/tutor", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ question: q })
-                });
-
-                const data = await res.json();
-
-                // 🔥 這裡才是 AI 回覆真正的內容
-                const reply = data.answer || "（無回覆）";
-
-                addBubble(reply, "bot");
-
-            } catch (e) {
-                addBubble("❌ 伺服器連線失敗，請稍後再試。", "bot");
-            }
         }
     </script>
 
 </body>
 </html>
-
