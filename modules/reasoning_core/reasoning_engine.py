@@ -6,7 +6,14 @@ class ReasoningEngine:
     """
 
     def __init__(self):
-        pass
+        try:
+            from .question_engine import QuestionEngine
+            from .logic_chain import LogicChain
+            self._question = QuestionEngine()
+            self._chain = LogicChain()
+        except Exception:
+            self._question = None
+            self._chain = None
 
     def decompose(self, query: str):
         """
@@ -30,6 +37,28 @@ class ReasoningEngine:
             return "這是一個定義或理解問題。"
 
         return "通用推理：需要綜合判斷。"
+
+    def infer_intent(self, query: str):
+        if self._question:
+            intent = self._question.analyze_intent(query)  # e.g. "intent: cause"
+            return intent.replace("intent: ", "")
+        lowered = query.lower()
+        if "為什麼" in query or "why" in lowered:
+            return "cause"
+        if "怎麼" in query or "方法" in query or "how" in lowered:
+            return "method"
+        if "目標" in query or "想要" in query or "goal" in lowered:
+            return "goal"
+        return "unknown"
+
+    def run_chain(self, query: str):
+        if self._chain:
+            return self._chain.run_chain(query)
+        return [f"接收問題：{query}", "分析語意…", "建立推理鏈…", "產生初步判斷…"]
+
+    def run(self, query: str):
+        steps = self.run_chain(query)
+        return {"type": "reasoning", "steps": steps, "conclusion": self.infer(query)}
 
     def reflect(self, answer: str):
         """
