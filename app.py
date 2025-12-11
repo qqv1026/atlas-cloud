@@ -2,7 +2,11 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from tutor import run_tutor
-import os
+import os, json
+from modules.reasoning_core import ReasoningCore
+from modules.memory_core import MemoryCore
+from modules.skill_router import SkillRouter
+from modules.auto_init import brain_registry
 
 app = FastAPI()
 
@@ -18,6 +22,9 @@ app.add_middleware(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 TUTOR_HTML = os.path.join(STATIC_DIR, "tutor.html")
+reasoning_core = ReasoningCore()
+memory_core = MemoryCore()
+router = SkillRouter()
 
 
 # ➤ 提供 Cloud Tutor 前端
@@ -31,17 +38,22 @@ def serve_ui():
 # ➤ Cloud Tutor API
 @app.post("/tutor")
 async def tutor_api(request: Request):
-    try:
-        body = await request.json()
-        question = body.get("question", "").strip()
+    body = await request.json()
+    question = body.get("question", "").strip()
 
-        if not question:
-            return JSONResponse({"answer": "⚠️ 請輸入問題內容"}, status_code=200)
+    memory_core.add("user", question)
 
-        # 執行 Tutor 腦袋
-        answer = run_tutor(question)
+    skill = router.route(question)
 
-        return JSONResponse({"answer": answer}, status_code=200)
+    engine = brain_registry.get(skill)
 
-    except Exception as e:
-        return JSONResponse({"answer": f"伺服器錯誤：{str(e)}"}, status_code=500)
+    if engine:
+        result = engine.run(question)
+    else:
+        result = [f"大腦模組 '{skill}' 尚未實作"]
+
+    return JSONResponse({
+        "skill": skill,
+        "result": result,
+        "memory": memory_core.get_context()
+    })
