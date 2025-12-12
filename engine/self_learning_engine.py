@@ -40,3 +40,9 @@ class SelfLearningEngine:
             "summary": self.summarize(text),
             "keywords": self.extract_keywords(text)
         }
+
+    def think(self, query: str, memory_hint: str):
+        return f"思考：{query} | 記憶提示：{memory_hint}".strip()
+
+    def feedback(self, query: str, result: str):
+        return {"status": "ok", "query": query, "result_len": len(result or "")}

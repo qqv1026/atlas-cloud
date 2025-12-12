@@ -51,3 +51,9 @@ class CinematicEngine:
             "composition": self.detect_composition(text),
             "motion": self.detect_camera_motion(text)
         }
+
+    def generate(self, text: str):
+        """
+        封裝生成接口，與主腦統一互動。
+        """
+        return self.create_shot(text)

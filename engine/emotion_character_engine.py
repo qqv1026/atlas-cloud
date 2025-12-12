@@ -58,3 +58,13 @@ class EmotionCharacterEngine:
             "behavior_style": style,
             "character_arc": arc
         }
+
+    def character_profile(self, text: str):
+        analysis = self.analyze(text)
+        traits = [analysis.get("behavior_style"), analysis.get("emotion"), analysis.get("character_arc")]
+        traits = [t for t in traits if t]
+        return {
+            "name": "未知角色",
+            "traits": traits,
+            "motivation": analysis.get("motivation")
+        }

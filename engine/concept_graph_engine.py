@@ -46,3 +46,19 @@ class ConceptGraphEngine:
         取得某概念的相關概念。
         """
         return self.graph.get(concept, {})
+
+    def generate(self, text: str):
+        """
+        生成概念網路輸出：對輸入文字抽關鍵詞並建立連結，回傳子圖。
+        """
+        try:
+            from engine.self_learning_engine import SelfLearningEngine
+            sle = SelfLearningEngine()
+            keywords = sle.extract_keywords(text)
+        except Exception:
+            keywords = []
+
+        self.process_keywords(keywords)
+
+        subgraph = {k: self.graph.get(k, {}) for k in keywords}
+        return {"keywords": keywords, "graph": subgraph or self.graph}

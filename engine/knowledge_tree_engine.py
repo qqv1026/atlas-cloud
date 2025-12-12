@@ -58,3 +58,11 @@ class KnowledgeTreeEngine:
         category = self.classify(record)
         self.add_to_tree(category, record)
         return category
+
+    def update(self, question: str, answer: str):
+        record = {
+            "summary": question,
+            "raw": answer,
+            "keywords": []
+        }
+        self.add_to_tree("其他", record)

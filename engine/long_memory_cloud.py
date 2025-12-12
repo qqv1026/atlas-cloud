@@ -24,3 +24,16 @@ class CloudMemoryEngine:
 
     def get_all(self):
         return self.load().get("memory", [])
+
+    def store(self, item):
+        if isinstance(item, dict):
+            return self.save(item)
+        return self.save({"text": str(item)})
+
+    def recall(self, query: str):
+        data = self.get_all()
+        for entry in reversed(data):
+            s = json.dumps(entry, ensure_ascii=False) if isinstance(entry, dict) else str(entry)
+            if query and (query in s):
+                return s
+        return ""
