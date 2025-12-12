@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>ATLAS Cloud Tutor</title>
+    <style>
+        body { margin: 0; background: #121212; font-family: "Microsoft JhengHei", sans-serif; color: #fff; display: flex; flex-direction: column; height: 100vh; }
+        .header { background: #1f1f1f; padding: 15px; font-size: 20px; font-weight: bold; text-align: center; border-bottom: 1px solid #333; }
+        .chat-container { flex: 1; overflow-y: auto; padding: 20px; max-width: 900px; margin: 0 auto; }
+        .msg { max-width: 70%; padding: 12px 16px; margin-bottom: 12px; border-radius: 10px; line-height: 1.5; white-space: pre-wrap; }
+        .user { background: #4a80f5; margin-left: auto; text-align: right; }
+        .assistant { background: #2d2d2d; margin-right: auto; }
+        .input-bar { display: flex; padding: 15px; background: #1f1f1f; border-top: 1px solid #333; gap: 10px; }
+        input { flex: 1; padding: 12px; border-radius: 8px; border: none; outline: none; background: #2d2d2d; color: #fff; font-size: 16px; }
+        button { margin-left: 10px; padding: 12px 20px; background: #4a80f5; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
+        button:disabled { background: #777; cursor: not-allowed; }
+        .thinking { opacity: 0.7; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="header">ATLAS Cloud Tutor 🎓</div>
+
+<div class="chat-container" id="chat"></div>
+
+<div class="input-bar">
+    <input id="question" type="text" placeholder="輸入你的問題…" />
+    <button onclick="sendMessage()" id="sendBtn">送出</button>
+    <button onclick="clearChat()" id="clearBtn">清除</button>
+    </div>
+
+<script>
+const chat = document.getElementById("chat");
+const input = document.getElementById("question");
+const sendBtn = document.getElementById("sendBtn");
+const clearBtn = document.getElementById("clearBtn");
+let lastSendTime = 0;
+
+function saveHistory() {
+    const items = Array.from(chat.querySelectorAll('.msg')).map(el => ({
+        sender: el.className.includes('user') ? 'user' : 'assistant',
+        text: el.innerText
+    }));
+    localStorage.setItem('tutor_history', JSON.stringify(items));
+}
+
+function loadHistory() {
+    try {
+        const raw = localStorage.getItem('tutor_history');
+        if (!raw) return;
+        const items = JSON.parse(raw);
+        items.forEach(i => appendMessage(i.text, i.sender));
+    } catch {}
+}
+
+function appendMessage(text, sender) {
+    const msg = document.createElement("div");
+    msg.className = "msg " + sender;
+    msg.innerText = text;
+    chat.appendChild(msg);
+    chat.scrollTop = chat.scrollHeight;
+    saveHistory();
+}
+
+function addBotMessage(text){ appendMessage(text, "assistant"); }
+function addUserMessage(text){ appendMessage(text, "user"); }
+
+async function sendMessage() {
+    let q = input.value.trim();
+    if (!q) return;
+    const now = Date.now();
+    if (now - lastSendTime < 500) return;
+    lastSendTime = now;
+
+    addUserMessage(q);
+    input.value = "";
+    sendBtn.disabled = true;
+
+    appendMessage("老師正在思考中… ⏳", "assistant thinking");
+    const thinkingBubble = chat.lastChild;
+
+    try {
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 20000);
+        const response = await fetch("/tutor", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: q }),
+            signal: controller.signal
+        });
+        clearTimeout(t);
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const data = await response.json();
+        thinkingBubble.remove();
+        if (data && data.result !== undefined) {
+            addBotMessage(`【大腦選擇】${data.skill}`);
+            if (Array.isArray(data.result)) {
+                addBotMessage(data.result.join("\n"));
+            } else {
+                addBotMessage(data.result);
+            }
+        } else {
+            appendMessage("⚠️ 錯誤：" + JSON.stringify(data), "assistant");
+        }
+    } catch (err) {
+        thinkingBubble.remove();
+        appendMessage("❌ 連線錯誤：" + err.message, "assistant");
+    }
+
+    sendBtn.disabled = false;
+}
+
+function clearChat() {
+    chat.innerHTML = "";
+    localStorage.removeItem('tutor_history');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadHistory();
+    input.focus();
+});
+
+input.addEventListener("keypress", function(e) { if (e.key === "Enter") sendMessage(); });
+</script>
+
+</body>
+</html>
