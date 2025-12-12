@@ -27,33 +27,27 @@ memory_core = MemoryCore()
 router = SkillRouter()
 
 
-# ➤ 提供 Cloud Tutor 前端
-@app.get("/")
-def serve_ui():
-    if not os.path.exists(TUTOR_HTML):
-        return JSONResponse({"error": "tutor.html not found"}, status_code=404)
+# ➤ 提供 Cloud Tutor 前端（新增 GET /tutor）
+@app.get("/tutor")
+def tutor_page():
     return FileResponse(TUTOR_HTML)
 
 
-# ➤ Cloud Tutor API
+# ➤ Cloud Tutor API（容忍多種鍵名）
 @app.post("/tutor")
 async def tutor_api(request: Request):
-    body = await request.json()
-    question = body.get("question", "").strip()
+    data = await request.json()
+    user_text = (
+        data.get("question")
+        or data.get("message")
+        or data.get("text")
+        or ""
+    ).strip()
 
-    memory_core.add("user", question)
+    if not user_text:
+        return JSONResponse({"error": "empty input"}, status_code=400)
 
-    skill = router.route(question)
-
-    engine = brain_registry.get(skill)
-
-    if engine:
-        result = engine.run(question)
-    else:
-        result = [f"大腦模組 '{skill}' 尚未實作"]
-
-    return JSONResponse({
-        "skill": skill,
-        "result": result,
-        "memory": memory_core.get_context()
-    })
+    return {
+        "result": f"【孩子回應中】你剛剛說的是：{user_text}",
+        "skill": "router"
+    }
